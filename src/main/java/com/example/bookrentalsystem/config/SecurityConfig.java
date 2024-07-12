@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,14 +21,21 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-        manager.createUser(org.springframework.security.core.userdetails.User.withUsername("user")
+
+        // Define users manually
+        UserDetails user = User.withUsername("user")
                 .password(passwordEncoder().encode("password"))
                 .roles(Role.USER.name())
-                .build());
-        manager.createUser(org.springframework.security.core.userdetails.User.withUsername("admin")
+                .build();
+
+        UserDetails admin = User.withUsername("admin")
                 .password(passwordEncoder().encode("password"))
                 .roles(Role.ADMIN.name())
-                .build());
+                .build();
+
+        manager.createUser(user);
+        manager.createUser(admin);
+
         return manager;
     }
 
@@ -37,15 +47,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/books/**").hasRole(Role.ADMIN.name())
-                .anyRequest().authenticated()
-            )
-            .httpBasic(withDefaults -> {});
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeRequests(authz -> authz
+                        .requestMatchers("/api/public/**").permitAll() // Public endpoints
+                        .requestMatchers("/api/register").authenticated() // Secure registration endpoint
+                        .requestMatchers("/api/books/**").hasRole(Role.ADMIN.name()) // Admin-only endpoints
+                        .anyRequest().authenticated() // All other requests require authentication
+                )
+                .httpBasic(withDefaults -> withDefaults.realmName("BookRentalSystem")); // HTTP Basic authentication configuration
+
         return http.build();
     }
 }
-
-
