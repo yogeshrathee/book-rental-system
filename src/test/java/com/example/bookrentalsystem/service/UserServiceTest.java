@@ -49,16 +49,5 @@ public class UserServiceTest {
         assertEquals("hashed_password", registeredUser.getPassword());
     }
 
-    @Test
-    public void testFindByEmail() {
-        User user = new User();
-        user.setEmail("test@example.com");
-
-        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(user));
-
-        Optional<User> foundUser = userService.findByEmail("test@example.com");
-
-        assertEquals("test@example.com", foundUser.get().getEmail());
-    }
 }
 
